@@ -1,0 +1,24 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What color is the background of the starting screen play button?",
+      "options": ["Red", "Green", "Blue", "Yellow"],
+      "correctIndex": 1
+    },
+    {
+      "id": "q2",
+      "text": "How do you flap?",
+      "options": ["Press space or tap", "Type a sentence", "Hold escape", "Say 'fly'"],
+      "correctIndex": 0
+    },
+    {
+      "id": "q3",
+      "text": "What happens after every two pipes by default?",
+      "options": ["Game ends", "Random question appears", "Bird speeds up", "Music changes"],
+      "correctIndex": 1
+    }
+  ],
+  "questionInterval": 2,
+  "bestQuestionScore": 0
+}

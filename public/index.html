@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flappy Quiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hud">
+    <div class="title">Flappy Quiz</div>
+    <div class="scores">
+      <div>Pipes: <span id="pipeScore">0</span></div>
+      <div>Question Score: <span id="questionScore">0</span></div>
+      <div>Best Question Score: <span id="bestScore">0</span></div>
+    </div>
+    <div class="controls">
+      <label>Question every
+        <input type="number" id="intervalInput" min="1" value="2" /> pipes
+      </label>
+      <button id="intervalSave">Update</button>
+      <button id="addQuestion" title="Add Question">+</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="start-screen" id="startScreen">
+      <div class="start-card">
+        <h1>Flappy Quiz</h1>
+        <button id="playButton" class="play-button">Play</button>
+        <p class="hint">Tap or press space to flap. Answer questions to boost your streak!</p>
+      </div>
+    </section>
+    <canvas id="gameCanvas" width="420" height="640"></canvas>
+    <section id="overlay" class="overlay hidden">
+      <div class="overlay-card" id="questionCard">
+        <h2 id="questionText"></h2>
+        <div id="options"></div>
+        <div id="feedback"></div>
+        <button id="closeQuestion">Resume</button>
+      </div>
+      <div class="overlay-card hidden" id="gameOverCard">
+        <h2>Game Over</h2>
+        <p>Pipes cleared: <span id="finalPipes">0</span></p>
+        <p>Question score: <span id="finalQuestionScore">0</span></p>
+        <div id="history"></div>
+        <button id="restart">Restart</button>
+      </div>
+    </section>
+  </main>
+
+  <section id="questionModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Manage Questions</h3>
+        <button id="closeManager" class="icon-button" aria-label="Close">✕</button>
+      </div>
+      <div class="question-list" id="questionList"></div>
+      <div class="divider"></div>
+      <h4>Add / Edit Question</h4>
+      <label>Prompt
+        <input id="qText" type="text" placeholder="Enter your question" />
+      </label>
+      <label>Options (comma separated)
+        <input id="qOptions" type="text" placeholder="Red, Green, Blue" />
+      </label>
+      <label>Correct option index (starting at 0)
+        <input id="qCorrect" type="number" min="0" value="0" />
+      </label>
+      <div class="modal-actions">
+        <button id="saveQuestion">Save</button>
+        <button id="saveQuestionAgain">Save &amp; Add Another</button>
+        <button id="cancelQuestion">Cancel</button>
+      </div>
+      <div id="modalError" class="error"></div>
+    </div>
+  </section>
+
+  <script src="game.js"></script>
+</body>
+</html>
