@@ -24,6 +24,7 @@ const qText = document.getElementById('qText');
 const qOptions = document.getElementById('qOptions');
 const qCorrect = document.getElementById('qCorrect');
 const saveQuestion = document.getElementById('saveQuestion');
+const saveQuestionAgain = document.getElementById('saveQuestionAgain');
 const cancelQuestion = document.getElementById('cancelQuestion');
 const modalError = document.getElementById('modalError');
 
@@ -80,6 +81,12 @@ async function loadState() {
   bestScoreEl.textContent = data.bestQuestionScore;
 }
 
+async function refreshQuestions() {
+  const res = await fetch('/api/state');
+  const data = await res.json();
+  questions = data.questions;
+}
+
 function drawScene() {
   ctx.fillStyle = '#4ca2f0';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -131,20 +138,24 @@ function spawnPipe() {
   gameState.pipes.push({ x: canvas.width, top, scored: false });
 }
 
+function maybeSpawnPipe() {
+  const last = gameState.pipes[gameState.pipes.length - 1];
+  if (!last || last.x <= canvas.width - gameState.pipeSpacing) {
+    spawnPipe();
+  }
+}
+
 function update(delta) {
   if (!gameState.running || gameState.pausedForQuestion) return;
 
-  gameState.timeSinceLastPipe += delta;
-  if (gameState.timeSinceLastPipe > gameState.pipeSpacing) {
-    spawnPipe();
-    gameState.timeSinceLastPipe = 0;
-  }
+  maybeSpawnPipe();
 
   gameState.bird.velocity += gameState.gravity;
   gameState.bird.y += gameState.bird.velocity;
 
   gameState.pipes.forEach(pipe => {
-    pipe.x -= gameState.pipeSpeed;
+    const speed = gameState.pipeSpeed * (delta / 16.67);
+    pipe.x -= speed;
     if (!pipe.scored && pipe.x + gameState.pipeWidth < gameState.bird.x) {
       pipe.scored = true;
       gameState.score += 1;
@@ -292,7 +303,7 @@ function closeModal() {
   questionModal.classList.add('hidden');
 }
 
-async function submitQuestion() {
+async function submitQuestion(closeAfter = true) {
   const text = qText.value.trim();
   const opts = qOptions.value.split(',').map(o => o.trim()).filter(Boolean);
   const correctIndex = Number(qCorrect.value);
@@ -310,9 +321,16 @@ async function submitQuestion() {
     body: JSON.stringify({ text, options: opts, correctIndex })
   });
   if (res.ok) {
-    const saved = await res.json();
-    questions.push(saved);
-    closeModal();
+    await res.json();
+    await refreshQuestions();
+    if (closeAfter) {
+      closeModal();
+    } else {
+      qText.value = '';
+      qOptions.value = '';
+      qCorrect.value = '0';
+      modalError.textContent = 'Saved! Add another question.';
+    }
   } else {
     const err = await res.json();
     modalError.textContent = err.error || 'Failed to save question';
@@ -332,6 +350,7 @@ restartButton.addEventListener('click', resetGame);
 intervalSave.addEventListener('click', saveInterval);
 addQuestionButton.addEventListener('click', openModal);
 saveQuestion.addEventListener('click', submitQuestion);
+saveQuestionAgain.addEventListener('click', () => submitQuestion(false));
 cancelQuestion.addEventListener('click', closeModal);
 
 loadState().then(resetGame);
