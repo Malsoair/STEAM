@@ -4,7 +4,10 @@ const path = require('path');
 const { nanoid } = require('nanoid');
 
 const app = express();
+const os = require('os');
+
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
 app.use(express.json());
@@ -16,7 +19,7 @@ function ensureDatabase() {
       questions: [],
       questionInterval: 2,
       bestQuestionScore: 0,
-      difficulty: 'Normal'
+      difficulty: 'Easy'
     };
     fs.writeFileSync(DB_PATH, JSON.stringify(fallback, null, 2));
   }
@@ -27,7 +30,7 @@ function readDatabase() {
   const raw = fs.readFileSync(DB_PATH, 'utf8');
   const data = JSON.parse(raw);
   if (!data.difficulty) {
-    data.difficulty = 'Normal';
+    data.difficulty = 'Easy';
     writeDatabase(data);
   }
   return data;
@@ -89,7 +92,7 @@ app.post('/api/config', (req, res) => {
   if (!Number.isInteger(parsedInterval) || parsedInterval < 1) {
     return res.status(400).json({ error: 'questionInterval must be an integer of at least 1.' });
   }
-  const allowedDifficulties = ['Easy', 'Normal', 'Hard'];
+  const allowedDifficulties = ['Relaxed', 'Easy', 'Normal', 'Hard'];
   if (difficulty && !allowedDifficulties.includes(difficulty)) {
     return res.status(400).json({ error: 'Unsupported difficulty.' });
   }
@@ -116,6 +119,12 @@ app.post('/api/best-score', (req, res) => {
   res.json({ bestQuestionScore: data.bestQuestionScore });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running at http://0.0.0.0:${PORT}`);
+app.listen(PORT, HOST, () => {
+  const nets = os.networkInterfaces();
+  const candidates = Object.values(nets)
+    .flat()
+    .filter(net => net && net.family === 'IPv4' && !net.internal)
+    .map(net => net.address);
+  const advertisedHost = candidates[0] || HOST;
+  console.log(`Server running at http://${advertisedHost}:${PORT}`);
 });

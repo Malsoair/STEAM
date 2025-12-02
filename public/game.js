@@ -46,7 +46,7 @@ let gameState = {
   questionScore: 0,
   bestQuestionScore: 0,
   questionInterval: 2,
-  difficulty: 'Normal',
+  difficulty: 'Easy',
   answered: [],
   timeSinceLastPipe: 0,
   askPending: false,
@@ -63,9 +63,10 @@ let countdownTimer = null;
 let countdownActive = false;
 
 const difficultyPresets = {
-  Easy: { pipeSpeed: 2.2, gap: 170, pipeSpacing: 200 },
-  Normal: { pipeSpeed: 2.6, gap: 140, pipeSpacing: 180 },
-  Hard: { pipeSpeed: 3.2, gap: 120, pipeSpacing: 170 }
+  Relaxed: { pipeSpeed: 2.0, gap: 190, pipeSpacing: 210 },
+  Easy: { pipeSpeed: 2.6, gap: 140, pipeSpacing: 180 },
+  Normal: { pipeSpeed: 3.0, gap: 130, pipeSpacing: 170 },
+  Hard: { pipeSpeed: 3.4, gap: 115, pipeSpacing: 165 }
 };
 
 function getCookieNumber(name) {
@@ -106,11 +107,11 @@ function resetGame() {
 }
 
 function applyDifficulty(name) {
-  const preset = difficultyPresets[name] || difficultyPresets.Normal;
+  const preset = difficultyPresets[name] || difficultyPresets.Easy;
   gameState.pipeSpeed = preset.pipeSpeed;
   gameState.gap = preset.gap;
   gameState.pipeSpacing = preset.pipeSpacing;
-  gameState.difficulty = name || 'Normal';
+  gameState.difficulty = name || 'Easy';
   if (qDifficulty) qDifficulty.value = gameState.difficulty;
 }
 
@@ -119,7 +120,7 @@ async function loadState() {
   const data = await res.json();
   questions = data.questions;
   gameState.questionInterval = data.questionInterval;
-  applyDifficulty(data.difficulty || 'Normal');
+  applyDifficulty(data.difficulty || 'Easy');
   if (qInterval) qInterval.value = data.questionInterval;
   const cookieBest = getCookieNumber('bestQuestionScore');
   const best = cookieBest !== null ? Math.max(cookieBest, data.bestQuestionScore) : data.bestQuestionScore;
