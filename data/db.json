@@ -20,5 +20,6 @@
     }
   ],
   "questionInterval": 2,
-  "bestQuestionScore": 0
+  "bestQuestionScore": 0,
+  "difficulty": "Normal"
 }

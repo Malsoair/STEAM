@@ -60,6 +60,16 @@ body {
   border-radius: 6px;
 }
 
+.controls button {
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #2e3045;
+  box-shadow: 0 4px 0 #111222;
+}
+
 button {
   padding: 10px 14px;
   border-radius: 10px;
@@ -193,6 +203,17 @@ canvas {
   overflow: auto;
 }
 
+#gameOverCard #history .history-entry {
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #2f3350;
+}
+
+#gameOverCard #history .history-entry:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
 #gameOverCard #history .label {
   color: var(--muted);
   font-size: 10px;
@@ -218,6 +239,14 @@ canvas {
 }
 
 .modal input {
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid #393d55;
+  background: #161827;
+  color: var(--text);
+}
+
+.modal select {
   padding: 10px;
   border-radius: 10px;
   border: 2px solid #393d55;
@@ -308,4 +337,16 @@ canvas {
 @keyframes fall {
   0% { transform: translateY(0) rotate(0deg); }
   100% { transform: translateY(120vh) rotate(320deg); }
+}
+
+.countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 48px;
+  pointer-events: none;
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.5);
 }

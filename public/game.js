@@ -23,12 +23,14 @@ const qText = document.getElementById('qText');
 const qOptions = document.getElementById('qOptions');
 const qCorrect = document.getElementById('qCorrect');
 const qInterval = document.getElementById('qInterval');
+const qDifficulty = document.getElementById('qDifficulty');
 const saveQuestion = document.getElementById('saveQuestion');
 const saveQuestionAgain = document.getElementById('saveQuestionAgain');
 const cancelQuestion = document.getElementById('cancelQuestion');
 const modalError = document.getElementById('modalError');
 const questionList = document.getElementById('questionList');
 const closeManager = document.getElementById('closeManager');
+const countdownEl = document.getElementById('countdown');
 
 let gameState = {
   running: false,
@@ -44,6 +46,7 @@ let gameState = {
   questionScore: 0,
   bestQuestionScore: 0,
   questionInterval: 2,
+  difficulty: 'Normal',
   answered: [],
   timeSinceLastPipe: 0,
   askPending: false,
@@ -56,6 +59,25 @@ let currentQuestion = null;
 let waitingForResume = false;
 let questionAnswered = false;
 let questionPool = [];
+let countdownTimer = null;
+let countdownActive = false;
+
+const difficultyPresets = {
+  Easy: { pipeSpeed: 2.2, gap: 170, pipeSpacing: 200 },
+  Normal: { pipeSpeed: 2.6, gap: 140, pipeSpacing: 180 },
+  Hard: { pipeSpeed: 3.2, gap: 120, pipeSpacing: 170 }
+};
+
+function getCookieNumber(name) {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  if (!match) return null;
+  const value = Number(decodeURIComponent(match[1]));
+  return Number.isFinite(value) ? value : null;
+}
+
+function setBestScoreCookie(score) {
+  document.cookie = `bestQuestionScore=${score}; max-age=31536000; path=/`;
+}
 
 function resetGame() {
   gameState.running = false;
@@ -77,8 +99,19 @@ function resetGame() {
   questionPause.classList.add('hidden');
   gameOverCard.classList.add('hidden');
   startScreen.classList.remove('hidden');
+  countdownEl.classList.add('hidden');
+  countdownActive = false;
   cancelAnimationFrame(animationId);
   drawScene();
+}
+
+function applyDifficulty(name) {
+  const preset = difficultyPresets[name] || difficultyPresets.Normal;
+  gameState.pipeSpeed = preset.pipeSpeed;
+  gameState.gap = preset.gap;
+  gameState.pipeSpacing = preset.pipeSpacing;
+  gameState.difficulty = name || 'Normal';
+  if (qDifficulty) qDifficulty.value = gameState.difficulty;
 }
 
 async function loadState() {
@@ -86,9 +119,18 @@ async function loadState() {
   const data = await res.json();
   questions = data.questions;
   gameState.questionInterval = data.questionInterval;
-  gameState.bestQuestionScore = data.bestQuestionScore;
+  applyDifficulty(data.difficulty || 'Normal');
   if (qInterval) qInterval.value = data.questionInterval;
-  bestScoreEl.textContent = data.bestQuestionScore;
+  const cookieBest = getCookieNumber('bestQuestionScore');
+  const best = cookieBest !== null ? Math.max(cookieBest, data.bestQuestionScore) : data.bestQuestionScore;
+  gameState.bestQuestionScore = best;
+  bestScoreEl.textContent = best;
+  if (cookieBest === null && best > 0) {
+    setBestScoreCookie(best);
+  }
+  if (cookieBest !== null && cookieBest > data.bestQuestionScore) {
+    await saveBestScore(cookieBest);
+  }
   questionPool = [...questions];
 }
 
@@ -183,6 +225,10 @@ function flap() {
 }
 
 function handleTap() {
+  if (countdownActive) {
+    finishCountdown(true);
+    return;
+  }
   if (waitingForResume) {
     resumeAfterQuestion();
     return;
@@ -311,6 +357,7 @@ function answerQuestion(question, choiceIdx) {
     if (gameState.questionScore > gameState.bestQuestionScore) {
       gameState.bestQuestionScore = gameState.questionScore;
       bestScoreEl.textContent = gameState.bestQuestionScore;
+      setBestScoreCookie(gameState.bestQuestionScore);
       saveBestScore(gameState.bestQuestionScore);
     }
     launchConfetti();
@@ -327,6 +374,38 @@ function pauseAfterQuestion(message) {
   overlay.classList.remove('hidden');
 }
 
+function startCountdown(skip = false) {
+  if (countdownTimer) clearTimeout(countdownTimer);
+  if (skip) {
+    finishCountdown(true);
+    return;
+  }
+  countdownActive = true;
+  countdownEl.textContent = '3';
+  countdownEl.classList.remove('hidden');
+  gameState.pausedForQuestion = true;
+  let remaining = 3;
+  const tick = () => {
+    if (!countdownActive) return;
+    remaining -= 1;
+    if (remaining <= 0) {
+      finishCountdown();
+    } else {
+      countdownEl.textContent = `${remaining}`;
+      countdownTimer = setTimeout(tick, 1000);
+    }
+  };
+  countdownTimer = setTimeout(tick, 1000);
+}
+
+function finishCountdown() {
+  if (countdownTimer) clearTimeout(countdownTimer);
+  countdownTimer = null;
+  countdownActive = false;
+  countdownEl.classList.add('hidden');
+  gameState.pausedForQuestion = false;
+}
+
 function resumeAfterQuestion() {
   if (!waitingForResume) return;
   waitingForResume = false;
@@ -335,7 +414,7 @@ function resumeAfterQuestion() {
   questionPause.classList.add('hidden');
   feedbackEl.textContent = '';
   feedbackEl.className = '';
-  gameState.pausedForQuestion = false;
+  startCountdown();
 }
 
 function launchConfetti() {
@@ -367,7 +446,7 @@ function endGame() {
     gameState.answered.forEach(entry => {
       const row = document.createElement('div');
       row.innerHTML = `<strong>${entry.question}</strong><br><span class="label">Selected:</span> ${entry.selected}<br><span class="label">Correct:</span> ${entry.correct}`;
-      row.className = entry.isCorrect ? 'correct' : 'incorrect';
+      row.className = `history-entry ${entry.isCorrect ? 'correct' : 'incorrect'}`;
       historyEl.appendChild(row);
     });
   }
@@ -375,6 +454,7 @@ function endGame() {
 }
 
 async function saveBestScore(score) {
+  setBestScoreCookie(score);
   await fetch('/api/best-score', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -382,19 +462,21 @@ async function saveBestScore(score) {
   });
 }
 
-async function saveInterval() {
+async function saveConfig() {
   const value = Number(qInterval.value);
   if (!Number.isInteger(value) || value < 1) {
     modalError.textContent = 'Interval must be at least 1 pipe.';
     return false;
   }
+  const chosenDifficulty = qDifficulty ? qDifficulty.value : gameState.difficulty;
   const res = await fetch('/api/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ questionInterval: value })
+    body: JSON.stringify({ questionInterval: value, difficulty: chosenDifficulty })
   });
   const data = await res.json();
   gameState.questionInterval = data.questionInterval;
+  applyDifficulty(data.difficulty);
   modalError.textContent = '';
   return true;
 }
@@ -405,6 +487,7 @@ async function openModal() {
   qOptions.value = '';
   qCorrect.value = '1';
   qInterval.value = gameState.questionInterval;
+  if (qDifficulty) qDifficulty.value = gameState.difficulty;
   modalError.textContent = '';
   await refreshQuestions(true);
 }
@@ -420,7 +503,7 @@ async function submitQuestion(closeAfter = true) {
   const hasQuestion = Boolean(text) || opts.length > 0;
 
   if (!hasQuestion) {
-    const intervalSaved = await saveInterval();
+    const intervalSaved = await saveConfig();
     if (intervalSaved && closeAfter) closeModal();
     if (!intervalSaved) modalError.textContent = 'Enter a question or a valid interval.';
     return;
@@ -443,7 +526,8 @@ async function submitQuestion(closeAfter = true) {
   if (res.ok) {
     await res.json();
     await refreshQuestions(true);
-    await saveInterval();
+    questionPool = [...questions];
+    await saveConfig();
     if (closeAfter) {
       closeModal();
     } else {
@@ -474,7 +558,9 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') {
     if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
     e.preventDefault();
-    if (waitingForResume) {
+    if (countdownActive) {
+      finishCountdown(true);
+    } else if (waitingForResume) {
       resumeAfterQuestion();
     } else {
       flap();

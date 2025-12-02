@@ -15,7 +15,9 @@
       <div>Best Question Score: <span id="bestScore">0</span></div>
     </div>
     <div class="controls">
-      <button id="addQuestion" title="Manage Questions">+</button>
+      <button id="addQuestion" title="Settings &amp; Questions" aria-label="Settings">
+        ⚙️
+      </button>
     </div>
   </header>
 
@@ -46,6 +48,7 @@
         <button id="restart">Restart</button>
       </div>
     </section>
+    <div id="countdown" class="countdown hidden"></div>
   </main>
 
   <section id="questionModal" class="modal hidden">
@@ -68,6 +71,13 @@
       </label>
       <label>Ask a question every (pipes)
         <input id="qInterval" type="number" min="1" value="2" />
+      </label>
+      <label>Difficulty
+        <select id="qDifficulty">
+          <option>Easy</option>
+          <option selected>Normal</option>
+          <option>Hard</option>
+        </select>
       </label>
       <div class="modal-actions">
         <button id="saveQuestion">Save</button>

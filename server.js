@@ -15,7 +15,8 @@ function ensureDatabase() {
     const fallback = {
       questions: [],
       questionInterval: 2,
-      bestQuestionScore: 0
+      bestQuestionScore: 0,
+      difficulty: 'Normal'
     };
     fs.writeFileSync(DB_PATH, JSON.stringify(fallback, null, 2));
   }
@@ -24,7 +25,12 @@ function ensureDatabase() {
 function readDatabase() {
   ensureDatabase();
   const raw = fs.readFileSync(DB_PATH, 'utf8');
-  return JSON.parse(raw);
+  const data = JSON.parse(raw);
+  if (!data.difficulty) {
+    data.difficulty = 'Normal';
+    writeDatabase(data);
+  }
+  return data;
 }
 
 function writeDatabase(data) {
@@ -78,15 +84,22 @@ app.delete('/api/questions/:id', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-  const { questionInterval } = req.body;
+  const { questionInterval, difficulty } = req.body;
   const parsedInterval = Number(questionInterval);
   if (!Number.isInteger(parsedInterval) || parsedInterval < 1) {
     return res.status(400).json({ error: 'questionInterval must be an integer of at least 1.' });
   }
+  const allowedDifficulties = ['Easy', 'Normal', 'Hard'];
+  if (difficulty && !allowedDifficulties.includes(difficulty)) {
+    return res.status(400).json({ error: 'Unsupported difficulty.' });
+  }
   const data = readDatabase();
   data.questionInterval = parsedInterval;
+  if (difficulty) {
+    data.difficulty = difficulty;
+  }
   writeDatabase(data);
-  res.json({ questionInterval: data.questionInterval });
+  res.json({ questionInterval: data.questionInterval, difficulty: data.difficulty });
 });
 
 app.post('/api/best-score', (req, res) => {
@@ -103,6 +116,6 @@ app.post('/api/best-score', (req, res) => {
   res.json({ bestQuestionScore: data.bestQuestionScore });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${PORT}`);
 });
