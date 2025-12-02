@@ -51,7 +51,13 @@
 
   <section id="questionModal" class="modal hidden">
     <div class="modal-card">
-      <h3>Add Question</h3>
+      <div class="modal-header">
+        <h3>Manage Questions</h3>
+        <button id="closeManager" class="icon-button" aria-label="Close">✕</button>
+      </div>
+      <div class="question-list" id="questionList"></div>
+      <div class="divider"></div>
+      <h4>Add / Edit Question</h4>
       <label>Prompt
         <input id="qText" type="text" placeholder="Enter your question" />
       </label>

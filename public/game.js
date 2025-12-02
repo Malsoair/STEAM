@@ -27,6 +27,8 @@ const saveQuestion = document.getElementById('saveQuestion');
 const saveQuestionAgain = document.getElementById('saveQuestionAgain');
 const cancelQuestion = document.getElementById('cancelQuestion');
 const modalError = document.getElementById('modalError');
+const questionList = document.getElementById('questionList');
+const closeManager = document.getElementById('closeManager');
 
 let gameState = {
   running: false,
@@ -81,10 +83,47 @@ async function loadState() {
   bestScoreEl.textContent = data.bestQuestionScore;
 }
 
-async function refreshQuestions() {
-  const res = await fetch('/api/state');
+async function refreshQuestions(render = false) {
+  const res = await fetch('/api/questions');
   const data = await res.json();
-  questions = data.questions;
+  questions = data;
+  if (render) renderQuestionList();
+}
+
+function renderQuestionList() {
+  if (!questionList) return;
+  questionList.innerHTML = '';
+  if (!questions.length) {
+    const empty = document.createElement('div');
+    empty.className = 'meta';
+    empty.textContent = 'No questions yet. Add one below!';
+    questionList.appendChild(empty);
+    return;
+  }
+
+  questions.forEach((q, idx) => {
+    const item = document.createElement('div');
+    item.className = 'question-item';
+
+    const header = document.createElement('header');
+    const title = document.createElement('div');
+    title.textContent = `${idx + 1}. ${q.text}`;
+    header.appendChild(title);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Delete';
+    removeBtn.addEventListener('click', () => deleteQuestion(q.id));
+    header.appendChild(removeBtn);
+    item.appendChild(header);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const correctLabel = q.options[q.correctIndex] ?? 'N/A';
+    meta.textContent = `Options: ${q.options.join(', ')} | Correct: ${correctLabel} (index ${q.correctIndex})`;
+    item.appendChild(meta);
+
+    questionList.appendChild(item);
+  });
 }
 
 function drawScene() {
@@ -291,12 +330,13 @@ async function saveInterval() {
   gameState.questionInterval = data.questionInterval;
 }
 
-function openModal() {
+async function openModal() {
   questionModal.classList.remove('hidden');
   qText.value = '';
   qOptions.value = '';
   qCorrect.value = '0';
   modalError.textContent = '';
+  await refreshQuestions(true);
 }
 
 function closeModal() {
@@ -322,7 +362,7 @@ async function submitQuestion(closeAfter = true) {
   });
   if (res.ok) {
     await res.json();
-    await refreshQuestions();
+    await refreshQuestions(true);
     if (closeAfter) {
       closeModal();
     } else {
@@ -334,6 +374,16 @@ async function submitQuestion(closeAfter = true) {
   } else {
     const err = await res.json();
     modalError.textContent = err.error || 'Failed to save question';
+  }
+}
+
+async function deleteQuestion(id) {
+  const res = await fetch(`/api/questions/${id}`, { method: 'DELETE' });
+  if (res.ok) {
+    await refreshQuestions(true);
+  } else {
+    const err = await res.json();
+    modalError.textContent = err.error || 'Failed to delete question';
   }
 }
 
@@ -352,5 +402,6 @@ addQuestionButton.addEventListener('click', openModal);
 saveQuestion.addEventListener('click', submitQuestion);
 saveQuestionAgain.addEventListener('click', () => submitQuestion(false));
 cancelQuestion.addEventListener('click', closeModal);
+closeManager.addEventListener('click', closeModal);
 
 loadState().then(resetGame);

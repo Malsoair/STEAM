@@ -40,6 +40,15 @@ app.get('/api/state', (req, res) => {
   }
 });
 
+app.get('/api/questions', (req, res) => {
+  try {
+    const data = readDatabase();
+    res.json(data.questions || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load questions.' });
+  }
+});
+
 app.post('/api/questions', (req, res) => {
   const { text, options, correctIndex } = req.body;
   if (!text || !Array.isArray(options) || options.length < 2) {
@@ -54,6 +63,18 @@ app.post('/api/questions', (req, res) => {
   data.questions.push(question);
   writeDatabase(data);
   res.status(201).json(question);
+});
+
+app.delete('/api/questions/:id', (req, res) => {
+  const { id } = req.params;
+  const data = readDatabase();
+  const originalLength = data.questions.length;
+  data.questions = data.questions.filter(q => q.id !== id);
+  if (data.questions.length === originalLength) {
+    return res.status(404).json({ error: 'Question not found.' });
+  }
+  writeDatabase(data);
+  res.json({ success: true });
 });
 
 app.post('/api/config', (req, res) => {
