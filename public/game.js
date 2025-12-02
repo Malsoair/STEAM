@@ -3,6 +3,7 @@ const ctx = canvas.getContext('2d');
 const startScreen = document.getElementById('startScreen');
 const playButton = document.getElementById('playButton');
 const pipeScoreEl = document.getElementById('pipeScore');
+const bestPipesEl = document.getElementById('bestPipes');
 const questionScoreEl = document.getElementById('questionScore');
 const bestScoreEl = document.getElementById('bestScore');
 const overlay = document.getElementById('overlay');
@@ -43,6 +44,7 @@ let gameState = {
   gap: 140,
   pipeSpeed: 2.6,
   score: 0,
+  bestPipeScore: 0,
   questionScore: 0,
   bestQuestionScore: 0,
   questionInterval: 2,
@@ -63,7 +65,7 @@ let countdownTimer = null;
 let countdownActive = false;
 
 const difficultyPresets = {
-  Relaxed: { pipeSpeed: 2.0, gap: 190, pipeSpacing: 210 },
+  Relaxed: { pipeSpeed: 1.7, gap: 220, pipeSpacing: 240 },
   Easy: { pipeSpeed: 2.6, gap: 140, pipeSpacing: 180 },
   Normal: { pipeSpeed: 3.0, gap: 130, pipeSpacing: 170 },
   Hard: { pipeSpeed: 3.4, gap: 115, pipeSpacing: 165 }
@@ -80,6 +82,10 @@ function setBestScoreCookie(score) {
   document.cookie = `bestQuestionScore=${score}; max-age=31536000; path=/`;
 }
 
+function setBestPipesCookie(score) {
+  document.cookie = `bestPipeScore=${score}; max-age=31536000; path=/`;
+}
+
 function resetGame() {
   gameState.running = false;
   gameState.bird = { x: 80, y: canvas.height / 2, size: 28, velocity: 0 };
@@ -94,6 +100,7 @@ function resetGame() {
   questionAnswered = false;
   questionPool = [...questions];
   pipeScoreEl.textContent = '0';
+  bestPipesEl.textContent = gameState.bestPipeScore;
   questionScoreEl.textContent = '0';
   overlay.classList.add('hidden');
   questionCard.classList.remove('hidden');
@@ -131,6 +138,13 @@ async function loadState() {
   }
   if (cookieBest !== null && cookieBest > data.bestQuestionScore) {
     await saveBestScore(cookieBest);
+  }
+  const cookiePipes = getCookieNumber('bestPipeScore');
+  const bestPipes = cookiePipes !== null ? cookiePipes : 0;
+  gameState.bestPipeScore = bestPipes;
+  bestPipesEl.textContent = bestPipes;
+  if (cookiePipes === null && bestPipes > 0) {
+    setBestPipesCookie(bestPipes);
   }
   questionPool = [...questions];
 }
@@ -274,6 +288,11 @@ function update(delta) {
       pipe.scored = true;
       gameState.score += 1;
       pipeScoreEl.textContent = gameState.score;
+      if (gameState.score > gameState.bestPipeScore) {
+        gameState.bestPipeScore = gameState.score;
+        bestPipesEl.textContent = gameState.bestPipeScore;
+        setBestPipesCookie(gameState.bestPipeScore);
+      }
       if (gameState.score % gameState.questionInterval === 0) {
         gameState.askPending = true;
       }
@@ -450,6 +469,11 @@ function endGame() {
       row.className = `history-entry ${entry.isCorrect ? 'correct' : 'incorrect'}`;
       historyEl.appendChild(row);
     });
+  }
+  if (gameState.score > gameState.bestPipeScore) {
+    gameState.bestPipeScore = gameState.score;
+    bestPipesEl.textContent = gameState.bestPipeScore;
+    setBestPipesCookie(gameState.bestPipeScore);
   }
   saveBestScore(gameState.questionScore);
 }

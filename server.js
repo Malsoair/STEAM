@@ -126,5 +126,11 @@ app.listen(PORT, HOST, () => {
     .filter(net => net && net.family === 'IPv4' && !net.internal)
     .map(net => net.address);
   const advertisedHost = candidates[0] || HOST;
-  console.log(`Server running at http://${advertisedHost}:${PORT}`);
+  console.log('Server running at:');
+  console.log(`  Local:   http://localhost:${PORT}`);
+  if (candidates.length) {
+    candidates.forEach(addr => console.log(`  Network: http://${addr}:${PORT}`));
+  } else {
+    console.log(`  Network: http://${advertisedHost}:${PORT}`);
+  }
 });
