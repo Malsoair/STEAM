@@ -22,6 +22,7 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
+  padding: 0 10px;
 }
 
 .hud {
@@ -49,6 +50,7 @@ body {
   align-items: center;
   gap: 12px;
   font-size: 12px;
+  flex-wrap: wrap;
 }
 
 .controls input {
@@ -114,6 +116,10 @@ canvas {
   border-radius: 12px;
   background: linear-gradient(180deg, #87cefa 0%, #4ca2f0 100%);
   image-rendering: pixelated;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 420 / 640;
 }
 
 .start-screen {
@@ -349,4 +355,68 @@ canvas {
   font-size: 48px;
   pointer-events: none;
   text-shadow: 0 0 18px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 900px) {
+  .hud {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    position: static;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .scores {
+    width: 100%;
+    font-size: 11px;
+    gap: 8px 12px;
+  }
+
+  .controls {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  main {
+    padding: 16px 0 28px;
+  }
+
+  .overlay-card, .modal-card {
+    width: min(520px, 94vw);
+  }
+
+  .start-card {
+    margin: 0 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    padding: 0 6px;
+  }
+
+  .hud {
+    border-radius: 0 0 14px 14px;
+  }
+
+  .scores {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .controls button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .play-button {
+    width: 100%;
+  }
+
+  .countdown {
+    font-size: 40px;
+  }
 }
